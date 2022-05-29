@@ -1,2 +1,2 @@
-# crypto_ml
+## Machine Learning Strategies in Crypto
  
