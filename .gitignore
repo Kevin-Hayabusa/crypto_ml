@@ -1,0 +1,19 @@
+*.tmp
+
+# Word temporary
+~$*.docx*
+
+# Word Auto Backup File
+Backup of *.docx*
+
+# Excel temporary
+~$*.xls*
+
+# Excel Backup File
+*.xlk
+
+# PowerPoint temporary
+~$*.ppt*
+
+# datafile
+~$*.feather*
