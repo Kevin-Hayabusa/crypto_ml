@@ -1,6 +1,8 @@
 import numpy as np
-
+from tqdm import tqdm
+import time
 from Algos.BacktestBase import *
+from Algos.MachineLearning import *
 
 class MeanRevertEvent(BacktestBase):
     def run_simple(self,lookback,threshold):
@@ -18,7 +20,7 @@ class MeanRevertEvent(BacktestBase):
         self.data['Net_equity']=np.NaN
         self.data['positions'] = np.NaN
 
-        for bar in range(lookback,len(self.data)):
+        for bar in tqdm(range(lookback,len(self.data))):
             if self.position == 0: #no position
                 if self.data['Zscore'].iloc[bar]> threshold:
                     self.go_short(bar,amount='all')
@@ -36,6 +38,7 @@ class MeanRevertEvent(BacktestBase):
 
             self.data.loc[self.data.index[bar],'Net_equity']=self.units * self.data.price[bar] + self.amount
             self.data.loc[self.data.index[bar], 'positions'] = self.units
+            time.sleep(0.00001)
 
         self.close_out(bar)
         self.calculate_perf()
@@ -203,30 +206,36 @@ class MeanRevertEvent(BacktestBase):
                 cum = (1+e).cumprod() #cum returns
                 d[e.index[0]]=cum[-1]/cum[0]-1
         trades = pd.DataFrame.from_dict(d,orient='index')
-        trades.columns=['pnl']
-        self.data.loc[trades.index,'pnl']=trades.values
+        trades.columns=['trade_return']
+        self.data.loc[trades.index,'trade_return']=trades.values
 
     def plot_result(self):
         self.results=self.data.dropna()
         if self.results is None:
             print('No results to plot yet. Run a strategy')
         title='%s | FTC = %.4f,PTC = %.4f'% (self.symbol, self.ftc,self.ptc)
-        self.results[['cum_returns', 'cum_strategy']].plot(title=title,
+        plot = self.results[['cum_returns', 'cum_strategy']].plot(title=title,
                                                      figsize=(10, 6))
+        return plot
+
 
 if __name__ == '__main__':
     path = '../../data/'
     type = 'feather'
-    symbol = 'BTCUSDT_1HOUR'
+    symbol = 'BTCUSDT_1MINUTE'
     amount = 1000000
     start = '2022-03-01'
-    end = '2022-07-01'
+    end = '2022-05-01'
     lookback = 20
     threshold = 2.5
+    ptc = 0.0001
 
-    bb = MeanRevertEvent(symbol, start, end, amount,verbose=True)
+    bb = MeanRevertEvent(symbol, start, end, amount,ptc=ptc,verbose=False)
     bb.get_data(path,type)
     bb.run_simple(lookback,threshold)
     #bb.run_scale(lookback, [2,2.5,3])
-    bb.plot_result()
-    plt.show()
+    plot = bb.plot_result()
+    plot.get_figure().savefig('Results/strategy.png')
+    bb.data.reset_index().to_feather('Results/backtesting.feather')
+
+

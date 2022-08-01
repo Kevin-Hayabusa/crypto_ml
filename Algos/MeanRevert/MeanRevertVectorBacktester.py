@@ -82,7 +82,7 @@ class SingleVectorBT_MR(SingleVectorBT):
         '''
         self.lookback=lookback
         self.threshold=threshold
-
+        print(f'running strategy lookback ={lookback},threshold={threshold},tc ={self.tc}')
         data=self.data.copy().dropna()
         data['Mean'] = data.Close.rolling(self.lookback).mean()
         data['Std'] = data.Close.rolling(self.lookback).std(ddof=0)
@@ -112,21 +112,51 @@ class SingleVectorBT_MR(SingleVectorBT):
         self.total_return = data['cum_strategy'].iloc[-1] - 1
         self.results=data
         self.calculate_perf()
+        self.trade_summary()
         print(f'raw return:{self.raw_return},total return:{self.total_return},sharpe:{self.sharpe},max_dd:{self.max_dd}')
+
+
+    def trade_summary(self):
+        self.results.loc[self.results.position!=0,'sign']=1
+        self.results['trades']=self.results.sign.shift(1)*self.results.strategy
+        events = np.split(self.results.trades, np.where(np.isnan(self.results.trades.values))[0])
+        events = [ev[~np.isnan(ev.values)] for ev in events if not isinstance(ev, np.ndarray)]
+        # removing empty DataFrames
+        events = [ev for ev in events if not ev.empty]
+        d={}
+        for e in events:
+            if len(e)==1: #special case of 1 trade
+                d[e.index[0]]=e[0]
+            else:
+                cum = (1+e).cumprod() #cum returns
+                d[e.index[0]]=cum[-1]/cum[0]-1
+        trades = pd.DataFrame.from_dict(d,orient='index')
+        trades.columns=['trade_return']
+        self.results.loc[trades.index,'trade_return']=trades.values
+
+    def plot_result(self):
+        self.results=self.data.dropna()
+        if self.results is None:
+            print('No results to plot yet. Run a strategy')
+        title='%s | FTC = %.4f,PTC = %.4f'% (self.symbol, self.ftc,self.ptc)
+        plot = self.results[['cum_returns', 'cum_strategy']].plot(title=title,
+                                                     figsize=(10, 6))
+        return plot
 
 if __name__=='__main__':
     path = '../../data/'
     type = 'feather'
-    symbol = 'BTCUSDT_1HOUR'
-    lookback = 10
+    symbol = 'BTCUSDT_1MINUTE'
+    start = '2021-05-01'
+    end = '2022-05-01'
+    lookback = 600
     threshold = 2.5
-    tc = 0
-    start='2022-02-01'
-    end = '2022-07-01'
+    tc=0.001
 
     mrbt = SingleVectorBT_MR(symbol,start,end,tc)
     mrbt.get_data(path,type)
     #mrbt.run_strategy(lookback)
     mrbt.run_strategy(lookback,threshold)
     mrbt.plot_results()
+    mrbt.results.reset_index().to_feather('Results/backtesting_vt.feather')
 
