@@ -530,7 +530,7 @@ class MachineLearning(object):
         dates.columns = ['start','mid', 'end']
         return dates
 if __name__ == '__main__':
-    start = '2021-05-01'
+    start = '2020-01-01'
     mid ='2022-04-01'
     end = '2022-05-01'
 
@@ -548,27 +548,28 @@ if __name__ == '__main__':
 
     ml = MachineLearning(data)
     ml.GenerateFeature(lag,factor_functions,return_threhold)
-
+    ml.data.reset_index().to_feather('MeanRevert/Results/pre_processed_data.feather')
     Forecast_Field = 'results'
     Features_Field = [idx for idx in ml.data.columns if idx[:6] == 'Factor']
 
     ml.RunModel(max_depth,n_estimators,random_state,'Open Time',Forecast_Field,Features_Field,start,mid,end)
+
     fig = ml.FeatureImportance()
     fig.savefig('MeanRevert/Results/feature_importance.png')
     Curve_Test = MachineLearning.Compute_ROC(ml.Model,ml.TestX,ml.TestY,0.001)
     Curve_Train = MachineLearning.Compute_ROC(ml.Model, ml.TrainX, ml.TrainY, 0.001)
     fig = MachineLearning.plot_ROC(Curve_Test,Curve_Train)
     fig.savefig('MeanRevert/Results/ROC.png')
-    df = ml.RollingValidation(max_depth,n_estimators,random_state,'Open Time',Forecast_Field,Features_Field,datetime.strptime(start,'%Y-%m-%d').date(),datetime.strptime(end,'%Y-%m-%d').date(),2,1)
-    plot = df[['precision','recall','f1','accuracy','trainskew']].plot()
-    plot.get_figure().savefig('MeanRevert/Results/rolling_validation.png')
-    ml.StressTest(range(2,30,1),range(30,100,5))
-    # ml.RollingTesting(max_depth,n_estimators,random_state,'Open Time',Forecast_Field,Features_Field,datetime.strptime(start,'%Y-%m-%d').date(),datetime.strptime(end,'%Y-%m-%d').date(),2,1)
-    # d = pd.merge(data,ml.data[['Open Time','predict']],left_on='Open Time',right_on='Open Time',how='left')
-
-
-
-
+    # df = ml.RollingValidation(max_depth,n_estimators,random_state,'Open Time',Forecast_Field,Features_Field,datetime.strptime(start,'%Y-%m-%d').date(),datetime.strptime(end,'%Y-%m-%d').date(),2,1)
+    # plot = df[['precision','recall','f1','accuracy','trainskew']].plot()
+    # plot.get_figure().savefig('MeanRevert/Results/rolling_validation.png')
+    # ml.StressTest(range(2,30,1),range(30,100,5))
+    # # ml.RollingTesting(max_depth,n_estimators,random_state,'Open Time',Forecast_Field,Features_Field,datetime.strptime(start,'%Y-%m-%d').date(),datetime.strptime(end,'%Y-%m-%d').date(),2,1)
+    # # d = pd.merge(data,ml.data[['Open Time','predict']],left_on='Open Time',right_on='Open Time',how='left')
+    #
+    #
+    #
+    #
 
 
 

@@ -114,6 +114,7 @@ class SingleVectorBT_MR(SingleVectorBT):
         self.calculate_perf()
         self.trade_summary()
         print(f'raw return:{self.raw_return},total return:{self.total_return},sharpe:{self.sharpe},max_dd:{self.max_dd}')
+        return (self.total_return,self.sharpe,self.max_dd)
 
 
     def trade_summary(self):
@@ -147,16 +148,24 @@ if __name__=='__main__':
     path = '../../data/'
     type = 'feather'
     symbol = 'BTCUSDT_1MINUTE'
-    start = '2021-05-01'
+    start = '2020-01-01'
     end = '2022-05-01'
-    lookback = 600
+    lookback = 30
     threshold = 2.5
-    tc=0.001
+    tc=0
 
     mrbt = SingleVectorBT_MR(symbol,start,end,tc)
     mrbt.get_data(path,type)
-    #mrbt.run_strategy(lookback)
     mrbt.run_strategy(lookback,threshold)
+
     mrbt.plot_results()
     mrbt.results.reset_index().to_feather('Results/backtesting_vt.feather')
+
+    # l={}
+    # for lookback in range(20,600,10):
+    #     result = mrbt.run_strategy(lookback,threshold)
+    #     l[lookback]=result
+    # report = pd.DataFrame.from_dict(l,orient='index')
+    # report.columns=['return','sharpe','max_dd']
+    # print(report)
 
